@@ -5,7 +5,12 @@ import { checkActiveTabStatus } from './tabs';
 import { loadSettings, saveSettings } from '../core/settings';
 import { testConnection, fetchModels } from '../core/llm';
 import { mergeVacancies, normalizeApiVacancy } from '../core/vacancy';
-import { executeSearch, buildSearchRequestBody, buildPageQueryParams } from '../core/api';
+import {
+  executeSearch,
+  buildSearchRequestBody,
+  buildPageQueryParams,
+  formatFiltersSummary
+} from '../core/api';
 
 export function installRpc() {
   if (typeof chrome === 'undefined' || !chrome.runtime?.onMessage) return;
@@ -109,8 +114,6 @@ export function installRpc() {
       }
 
       if (type === 'SYNC_NOW') {
-        pushLog('info', 'Запрос синхронизации с API hireseeker.ru...');
-
         let currentUrl = state.connectedPageUrl || '';
         let pageBody = state.lastSearchBody;
 
@@ -150,12 +153,16 @@ export function installRpc() {
         // Execute API search directly using current tab URL search parameters or live page body
         try {
           const filterBody = buildSearchRequestBody(currentUrl, pageBody, state.lastSelection);
-          const filterDesc =
-            filterBody.search_text ||
+          const qp = buildPageQueryParams(currentUrl, '', state.lastSelection);
+          const filterSummary = formatFiltersSummary(qp);
+          const codes =
             filterBody.profession_codes?.slice(0, 3).join(', ') +
-              (filterBody.profession_codes?.length > 3 ? '…' : '') ||
-            'фильтры';
-          pushLog('info', `Вызов API POST /api/v1/search (${filterDesc})...`);
+            (filterBody.profession_codes?.length > 3 ? '…' : '');
+          const queryText = filterBody.search_text ? `«${filterBody.search_text}»` : '';
+          const mainTarget = queryText || codes || 'все специальности';
+          const filterDesc = filterSummary ? `${mainTarget} (${filterSummary})` : mainTarget;
+
+          pushLog('info', `Поиск: ${filterDesc}...`);
 
           const origin = state.lastOrigin || 'https://hireseeker.ru';
           const searchRes = await executeSearch(origin, filterBody);
@@ -163,7 +170,7 @@ export function installRpc() {
           // Clear previous vacancies cache for clean search synchronization
           state.vacancies.clear();
           state.lastSearchToken = searchRes.token;
-          state.lastQueryParams = buildPageQueryParams(currentUrl, '', state.lastSelection);
+          state.lastQueryParams = qp;
           if (searchRes.total_items != null) {
             state.totalFound = searchRes.total_items;
           }
@@ -176,7 +183,7 @@ export function installRpc() {
             data: Array.from(state.vacancies.values())
           };
         } catch (err: any) {
-          pushLog('warn', `API-поиск вернул ошибку: ${err?.message || err}`);
+          pushLog('warn', `Ошибка поиска: ${err?.message || err}`);
           return {
             success: true,
             data: Array.from(state.vacancies.values())
@@ -224,26 +231,26 @@ export function installRpc() {
 
       if (type === 'TEST_LLM_CONNECTION') {
         const cfg = data || (await loadSettings()).llm;
-        pushLog('info', `Проверка подключения к LLM (${cfg.baseUrl}, модель: ${cfg.model})`);
+        pushLog('info', `Проверка LLM (${cfg.model})...`);
         try {
           await testConnection(cfg);
-          pushLog('info', '✓ Подключение к LLM успешно проверено');
+          pushLog('info', '✓ Связь с LLM установлена');
           return { success: true };
         } catch (err: any) {
-          pushLog('warn', `✗ Ошибка подключения к LLM: ${err?.message || err}`);
+          pushLog('warn', `✗ Ошибка связи с LLM: ${err?.message || err}`);
           throw err;
         }
       }
 
       if (type === 'FETCH_MODELS') {
         const cfg = data || (await loadSettings()).llm;
-        pushLog('info', `Запрос списка моделей с ${cfg.baseUrl}...`);
+        pushLog('info', 'Загрузка списка моделей...');
         try {
           const models = await fetchModels(cfg);
-          pushLog('info', `✓ Получено доступных моделей: ${models.length}`);
+          pushLog('info', `✓ Загружено моделей: ${models.length}`);
           return { success: true, data: models };
         } catch (err: any) {
-          pushLog('warn', `✗ Не удалось получить модели: ${err?.message || err}`);
+          pushLog('warn', `✗ Ошибка загрузки моделей: ${err?.message || err}`);
           throw err;
         }
       }

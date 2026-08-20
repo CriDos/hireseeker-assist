@@ -5,11 +5,11 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import './panel.css';
 
 window.addEventListener('error', event => {
-  console.error('[hireseeker-assist:panel window error]', event.error || event.message);
+  console.error('[HireSeeker:panel] Ошибка окна:', event.error || event.message);
 });
 
 window.addEventListener('unhandledrejection', event => {
-  console.error('[hireseeker-assist:panel unhandled promise rejection]', event.reason);
+  console.error('[HireSeeker:panel] Необработанное исключение:', event.reason);
 });
 
 const rootElement = document.getElementById('root');

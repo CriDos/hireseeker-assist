@@ -25,7 +25,7 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('[hireseeker-assist:panel] Uncaught render error:', error, errorInfo);
+    console.error('[HireSeeker:panel] Ошибка рендера:', error, errorInfo);
     this.setState({ error, errorInfo });
   }
 

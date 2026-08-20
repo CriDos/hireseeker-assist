@@ -30,7 +30,7 @@ export function pushLog(level: 'info' | 'warn' | 'error' | 'debug', message: str
   logBuffer.push(entry);
 
   // Structured console output in DevTools
-  const prefix = `[HireSeeker Assist:${level.toUpperCase()}] ${ts} -`;
+  const prefix = `[HireSeeker:${level.toUpperCase()}] ${ts} -`;
   if (level === 'error') {
     if (meta) console.error(prefix, message, meta);
     else console.error(prefix, message);
@@ -77,13 +77,11 @@ export function clearLogs() {
 
 export function registerPanelPort(port: chrome.runtime.Port) {
   panelPorts.add(port);
-  pushLog('debug', 'Боковая панель подключена к фоновому воркеру');
+  pushLog('debug', 'Панель подключена');
   port.onDisconnect.addListener(() => {
-    panelPorts.delete(port);
-    pushLog('debug', 'Боковая панель отключена');
+    pushLog('debug', 'Панель отключена');
   });
 }
-
 export function broadcastToPanels(message: any) {
   for (const port of panelPorts) {
     try {

@@ -2,6 +2,7 @@ import { describe, it, expect, afterEach } from 'vitest';
 import {
   buildSearchRequestBody,
   buildPageQueryParams,
+  formatFiltersSummary,
   pageCountFor,
   resolveProfessionCodes,
   PROFESSION_GROUPS,
@@ -176,5 +177,18 @@ describe('core/api', () => {
     );
     expect(res.vacancies.length).toBe(1);
     expect(res.vacancies[0].id).toBe(101);
+  });
+
+  it('formats query params summary into clean human-readable text', () => {
+    expect(
+      formatFiltersSummary('schedule_filter=remote&include_without_salary=true&period_days=7')
+    ).toBe('удалёнка · 7 дн.');
+    expect(
+      formatFiltersSummary(
+        'schedule_filter=remote&schedule_filter=hybrid&salary_buckets=150_200&include_without_salary=false&country_filter=rf&period_days=14'
+      )
+    ).toBe('удалёнка, гибрид · 150–200k · с з/п · РФ · 14 дн.');
+    expect(formatFiltersSummary('')).toBe('');
+    expect(formatFiltersSummary(undefined)).toBe('');
   });
 });

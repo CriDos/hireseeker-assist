@@ -9,13 +9,13 @@ import { ensureKeepAlive } from './keepalive';
 
 export async function startAiFilterRun(criteria: string): Promise<void> {
   if (state.activeAiRun?.inProgress) {
-    pushLog('warn', 'Попытка повторного запуска ИИ-фильтрации (уже выполняется)');
+    pushLog('warn', 'ИИ-фильтрация уже выполняется');
     throw new Error('ИИ-фильтрация уже выполняется');
   }
 
   const vacancies = Array.from(state.vacancies.values());
   if (!vacancies.length) {
-    pushLog('warn', 'ИИ-фильтрация не запущена: в локальной базе нет вакансий');
+    pushLog('warn', 'Нет вакансий для анализа');
     throw new Error('Нет доступных вакансий. Откройте поиск на hireseeker.ru');
   }
 
@@ -41,7 +41,7 @@ export async function startAiFilterRun(criteria: string): Promise<void> {
   const startTime = Date.now();
   pushLog(
     'info',
-    `Запуск ИИ-фильтрации: ${vacancies.length} вакансий (модель: ${config.model}, пачка: ${config.batchSize}, потоков: ${config.concurrency})`
+    `Анализ ${vacancies.length} вакансий (${config.model}, пачка: ${config.batchSize}, потоков: ${config.concurrency})`
   );
 
   // Reset previous AI evaluations on start
@@ -122,7 +122,7 @@ export async function startAiFilterRun(criteria: string): Promise<void> {
     const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
     pushLog(
       'info',
-      `ИИ-фильтрация завершена за ${elapsed}с: найдено ${matched.length} совпадений из ${vacancies.length}`
+      `Анализ завершен за ${elapsed}с: подходит ${matched.length} из ${vacancies.length}`
     );
 
     broadcastToPanels({
@@ -140,9 +140,9 @@ export async function startAiFilterRun(criteria: string): Promise<void> {
     notifyActiveTabBadges();
   } catch (error: any) {
     if (abortController.signal.aborted) {
-      pushLog('info', 'ИИ-фильтрация остановлена пользователем');
+      pushLog('info', 'Анализ остановлен');
     } else {
-      pushLog('error', `Ошибка ИИ-фильтрации: ${error?.message || error}`);
+      pushLog('error', `Ошибка анализа: ${error?.message || error}`);
     }
     broadcastToPanels({
       type: 'ai-progress',
@@ -167,7 +167,7 @@ export function cancelAiFilterRun() {
     state.activeAiRun.abortController.abort();
     state.activeAiRun.inProgress = false;
     ensureKeepAlive();
-    pushLog('info', 'Запрос на остановку ИИ-фильтрации');
+    pushLog('info', 'Остановка анализа...');
     broadcastToPanels({
       type: 'ai-progress',
       progress: {
@@ -215,7 +215,7 @@ export function notifyActiveTabBadges() {
  */
 export async function fetchAllPagesForSearch(): Promise<number> {
   if (!state.lastSearchToken) {
-    pushLog('warn', 'Выгрузка невозможна: токен поисковой сессии не найден');
+    pushLog('warn', 'Сессия поиска не найдена');
     throw new Error('Токен сессии поиска не найден. Выполните поиск на hireseeker.ru');
   }
 
@@ -230,10 +230,7 @@ export async function fetchAllPagesForSearch(): Promise<number> {
   const queryParams = state.lastQueryParams || '';
   const startTime = Date.now();
 
-  pushLog(
-    'info',
-    `Старт выгрузки страниц выдачи из API (${queryParams ? 'фильтры: ' + queryParams : 'все'})`
-  );
+  pushLog('debug', 'Загрузка страниц поиска...');
 
   broadcastToPanels({
     type: 'sync-progress',
@@ -285,10 +282,7 @@ export async function fetchAllPagesForSearch(): Promise<number> {
           count: state.vacancies.size
         });
 
-        pushLog(
-          'debug',
-          `Выгружена страница ${page}/${totalPages}: получено ${state.vacancies.size} вакансий`
-        );
+        pushLog('debug', `Страница ${page}/${totalPages}: ${state.vacancies.size} вакансий`);
 
         if (pageData.vacancies.length < pageSize || page >= totalPages) {
           break;
@@ -301,12 +295,9 @@ export async function fetchAllPagesForSearch(): Promise<number> {
     }
 
     const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-    pushLog(
-      'info',
-      `Выгрузка завершена за ${elapsed}с! Найдено и загружено: ${state.vacancies.size} вакансий`
-    );
+    pushLog('info', `Загружено ${state.vacancies.size} вакансий за ${elapsed}с`);
   } catch (error: any) {
-    pushLog('warn', `Ошибка при выгрузке страниц API: ${error?.message || error}`);
+    pushLog('warn', `Ошибка загрузки страниц: ${error?.message || error}`);
   } finally {
     state.loadAllInProgress = false;
     broadcastToPanels({

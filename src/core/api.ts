@@ -406,6 +406,72 @@ export function buildSearchRequestBody(
   throw new Error('Поисковые фильтры или профессии не выбраны на странице hireseeker.ru');
 }
 
+export function formatFiltersSummary(queryParams?: string): string {
+  if (!queryParams) return '';
+  try {
+    const params = new URLSearchParams(queryParams.replace(/^\?/, ''));
+    const parts: string[] = [];
+
+    const sched = params.getAll('schedule_filter');
+    if (sched.length) {
+      const schedMap: Record<string, string> = {
+        remote: 'удалёнка',
+        office: 'офис',
+        hybrid: 'гибрид',
+        flexible: 'гибкий'
+      };
+      const translated = sched.map(s => schedMap[s.toLowerCase()] || s);
+      parts.push(translated.join(', '));
+    }
+
+    const sb = params.getAll('salary_buckets');
+    if (sb.length) {
+      const sbMap: Record<string, string> = {
+        '0_50': 'до 50k',
+        sb_0_50: 'до 50k',
+        '50_100': '50–100k',
+        sb_50_100: '50–100k',
+        '100_150': '100–150k',
+        sb_100_150: '100–150k',
+        '150_200': '150–200k',
+        sb_150_200: '150–200k',
+        '200_250': '200–250k',
+        sb_200_250: '200–250k',
+        '250_300': '250–300k',
+        sb_250_300: '250–300k',
+        '300_plus': 'от 300k',
+        sb_300_plus: 'от 300k'
+      };
+      const translated = sb.map(s => sbMap[s.toLowerCase()] || s);
+      parts.push(translated.join(', '));
+    }
+
+    const nosal = params.get('include_without_salary');
+    if (nosal === 'false' || nosal === '0') {
+      parts.push('с з/п');
+    }
+
+    const cty = params.getAll('country_filter');
+    if (cty.length) {
+      const ctyMap: Record<string, string> = {
+        rf: 'РФ',
+        ru: 'РФ',
+        world: 'весь мир'
+      };
+      parts.push(cty.map(c => ctyMap[c.toLowerCase()] || c).join(', '));
+    }
+
+    const pd = params.get('period_days');
+    if (pd && pd !== '0' && pd !== '30') {
+      parts.push(`${pd} дн.`);
+    }
+
+    return parts.join(' · ');
+  } catch {
+    return '';
+  }
+}
+
 export function buildPageQueryParams(
   urlStr?: string,
   queryParams?: string,

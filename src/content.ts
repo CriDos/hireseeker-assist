@@ -100,7 +100,7 @@ function injectMainWorldInterceptor() {
             return;
           }
         } catch (err) {
-          console.warn('[HireSeeker Assist] Не удалось выполнить повторный запрос поиска:', err);
+          console.warn('[HireSeeker] Ошибка повторного поиска:', err);
         }
       });
     })();
@@ -171,14 +171,14 @@ function updateCardBadges(
     }
   });
   if (count > 0) {
-    console.debug(`[HireSeeker Assist] Отображено ${count} AI-бейджей на странице`);
+    console.debug(`[HireSeeker] Бейджи на странице: ${count}`);
   }
 }
 
 // 3. Main Initialization
 function init() {
   injectMainWorldInterceptor();
-  console.info('[HireSeeker Assist] API-модуль активирован на', window.location.pathname);
+  console.info('[HireSeeker] Модуль активен:', window.location.pathname);
 
   let lastEvaluations: Record<string, any> = {};
   let lastReportedStateKey = '';
@@ -227,7 +227,7 @@ function init() {
   // Listen for intercepted events from Main World fetch
   window.addEventListener('__hs_search_post__', (ev: any) => {
     lastCapturedPostBody = ev.detail;
-    console.info('[HireSeeker Assist] Перехвачен поиск API:', lastCapturedPostBody);
+    console.info('[HireSeeker] Поиск перехвачен:', lastCapturedPostBody);
     reportCurrentPageState('search_post');
     chrome.runtime
       .sendMessage({
@@ -251,7 +251,7 @@ function init() {
     } catch {}
 
     console.info(
-      `[HireSeeker Assist] Получен ответ API: ${rawVacancies.length} вакансий (всего: ${json?.total_items ?? '?'}, токен: ${token ? token.slice(0, 8) + '…' : '—'})`
+      `[HireSeeker] Получено вакансий: ${rawVacancies.length} (всего: ${json?.total_items ?? '?'})`
     );
 
     chrome.runtime
