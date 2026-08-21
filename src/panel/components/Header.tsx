@@ -1,8 +1,16 @@
 import React from 'react';
 import { useSessionStore } from '../store/useSessionStore';
+import { sendRpc } from '../services/extension';
 
 export const Header: React.FC = () => {
   const { connected } = useSessionStore();
+
+  const handlePillClick = async () => {
+    if (!connected) {
+      await sendRpc('OPEN_TAB');
+      void useSessionStore.getState().checkStatus();
+    }
+  };
 
   return (
     <header className="hs-header">
@@ -23,13 +31,19 @@ export const Header: React.FC = () => {
         </div>
 
         <div className="hs-header-tags">
-          <span
-            className={`hs-status-pill ${connected ? 'hs-status-online' : 'hs-status-offline'}`}
-            title={connected ? 'Сайт hireseeker.ru подключен' : 'Откройте hireseeker.ru в браузере'}
+          <button
+            type="button"
+            className={`hs-status-pill ${connected ? 'hs-status-online' : 'hs-status-offline hs-status-clickable'}`}
+            onClick={handlePillClick}
+            title={
+              connected
+                ? 'Сайт hireseeker.ru подключен'
+                : 'Нажмите, чтобы открыть сайт hireseeker.ru'
+            }
           >
             <span className="hs-status-dot" />
-            {connected ? 'Сайт активен' : 'Ожидание вкладки'}
-          </span>
+            <span>{connected ? 'Сайт активен' : 'Открыть вкладку'}</span>
+          </button>
         </div>
       </div>
     </header>

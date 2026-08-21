@@ -1,6 +1,6 @@
 # Техническая спецификация HireSeeker Assist
 
-**Версия:** 1.0.3  
+**Версия:** 1.0.4  
 **Платформа:** Google Chrome / Chromium (Manifest V3)  
 **Технологический стек:** TypeScript 5.x, React 19.x, Zustand 5.x, Vite 6.x, Vitest  
 

@@ -1,7 +1,7 @@
 import { state, clearState, restoreStateFromStorage, saveStateToStorage } from './state';
 import { getLogs, clearLogs, pushLog, broadcastToPanels } from './log';
 import { startAiFilterRun, cancelAiFilterRun, fetchAllPagesForSearch } from './coordinator';
-import { checkActiveTabStatus } from './tabs';
+import { checkActiveTabStatus, ensureHireSeekerTabOpen } from './tabs';
 import { loadSettings, saveSettings } from '../core/settings';
 import { testConnection, fetchModels } from '../core/llm';
 import {
@@ -57,6 +57,12 @@ export function installRpc() {
         };
       }
 
+      if (type === 'OPEN_TAB') {
+        await ensureHireSeekerTabOpen();
+        const pageStatus = await checkActiveTabStatus();
+        return { success: true, data: pageStatus };
+      }
+
       if (type === 'GET_VACANCIES') {
         return {
           success: true,
@@ -70,17 +76,12 @@ export function installRpc() {
 
         if (typeof chrome !== 'undefined' && chrome.tabs) {
           try {
-            const tabs = await new Promise<chrome.tabs.Tab[]>(resolve => {
-              chrome.tabs.query({ active: true, currentWindow: true }, t => {
-                if (t.length && t[0].url?.includes('hireseeker.ru')) resolve(t);
-                else chrome.tabs.query({ url: '*://hireseeker.ru/*' }, resolve);
-              });
-            });
+            await ensureHireSeekerTabOpen();
 
-            if (tabs.length && tabs[0].id) {
-              state.activeTabId = tabs[0].id;
+            const tabId = state.activeTabId;
+            if (tabId) {
               const pageState: any = await new Promise(resolve => {
-                chrome.tabs.sendMessage(tabs[0].id!, { type: 'GET_PAGE_STATE' }, resp => {
+                chrome.tabs.sendMessage(tabId, { type: 'GET_PAGE_STATE' }, resp => {
                   if (chrome.runtime.lastError || !resp) resolve(null);
                   else resolve(resp);
                 });

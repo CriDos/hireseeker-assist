@@ -32,28 +32,22 @@ describe('background/tabs', () => {
     expect(state.activeTabId).toBe(42);
   });
 
-  it('ensures hireseeker tab open focuses existing tab', async () => {
-    let updatedTabId = 0;
-
+  it('ensures hireseeker tab connects to existing tab without stealing focus', async () => {
     (globalThis as any).chrome = {
       tabs: {
         query: (queryInfo: any, cb: any) => {
           if (queryInfo.active) {
             cb([{ id: 1, url: 'https://google.com' }]);
           } else if (queryInfo.url) {
-            cb([{ id: 10, url: 'https://hireseeker.ru/vacancies' }]);
+            cb([{ id: 10, url: 'https://hireseeker.ru/vacancies', title: 'Vacancies' }]);
           }
-        },
-        update: (id: number, _opts: any, cb: any) => {
-          updatedTabId = id;
-          cb?.();
         }
       }
     };
 
     await ensureHireSeekerTabOpen();
-    expect(updatedTabId).toBe(10);
     expect(state.activeTabId).toBe(10);
+    expect(state.connectedPageUrl).toBe('https://hireseeker.ru/vacancies');
   });
 
   it('ensures hireseeker tab open creates new tab if none open', async () => {

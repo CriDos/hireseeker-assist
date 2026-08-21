@@ -168,6 +168,20 @@ body {
   border-radius: var(--radius-full);
   font-size: 10px;
   font-weight: 500;
+  border: none;
+  background: transparent;
+  cursor: default;
+  transition: all 0.12s ease;
+  font-family: inherit;
+}
+
+.hs-status-clickable {
+  cursor: pointer;
+}
+
+.hs-status-clickable:hover {
+  filter: brightness(1.15);
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.25);
 }
 
 .hs-status-dot {

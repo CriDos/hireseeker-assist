@@ -46,14 +46,18 @@ export async function ensureHireSeekerTabOpen(): Promise<void> {
         return;
       }
 
-      // Check if any tab with hireseeker.ru is open
+      // Check if any tab with hireseeker.ru is open (connect without stealing focus)
       chrome.tabs.query({ url: '*://hireseeker.ru/*' }, tabs => {
         if (tabs.length > 0 && tabs[0].id) {
-          chrome.tabs.update(tabs[0].id, { active: true }, () => {
-            state.activeTabId = tabs[0].id || null;
-            state.connectedPageUrl = tabs[0].url || 'https://hireseeker.ru/';
-            resolve();
+          state.activeTabId = tabs[0].id || null;
+          state.connectedPageUrl = tabs[0].url || 'https://hireseeker.ru/';
+          broadcastToPanels({
+            type: 'page-status',
+            connected: true,
+            url: tabs[0].url,
+            title: tabs[0].title
           });
+          resolve();
         } else {
           // Open hireseeker.ru in a new tab if not opened yet
           chrome.tabs.create({ url: 'https://hireseeker.ru/' }, newTab => {
