@@ -1,6 +1,6 @@
 # Техническая спецификация HireSeeker Assist
 
-**Версия:** 1.0.1  
+**Версия:** 1.0.2  
 **Платформа:** Google Chrome / Chromium (Manifest V3)  
 **Технологический стек:** TypeScript 5.x, React 19.x, Zustand 5.x, Vite 6.x, Vitest  
 
@@ -163,7 +163,7 @@
 - Отображение отсортированных по релевантности карточек с AI-оценкой (`AI: 95%`) и текстовым обоснованием.
 
 ### 5.4. SettingsTab:
-- Выбор провайдера из предустановленных пресетов (OpenCode Zen, OpenAI, OpenRouter, DeepSeek, Groq, Ollama, Custom).
+- Выбор провайдера из предустановленных пресетов (OpenCode Zen, OpenAI, OpenRouter, DeepSeek, Groq, Mistral, Ollama, vLLM, Custom).
 - Поле API-ключа с иконкой-глазиком (`👁️` / `👁️‍🗨️`).
 - Единый комбобокс для модели с выпадающим списком по нажатию на стрелку (`▼`) и авто-загрузкой с эндпоинта `/models`.
 - Компактная проверка связи со статусом в одну строку рядом с кнопкой.
@@ -177,19 +177,22 @@
 
 | Тестовый модуль | Количество тестов | Проверяемая функциональность |
 |---|---|---|
-| `tests/core/api.test.ts` | 11 | Каталог 16 категорий, парсер параметров URL, `executeSearch`, `fetchSearchPage` |
-| `tests/core/ai-filter.test.ts` | 7 | Пакетный скоринг, потоковый вызов функций, многопоточный пул, валидация баллов |
-| `tests/core/llm.test.ts` | 7 | SSE-стриминг чанков tool_calls, тест соединения, получение моделей, обработка HTTP-ошибок |
-| `tests/core/models.test.ts` | 10 | Пресеты провайдеров, валидация DTO |
-| `tests/core/search.test.ts` | 5 | Полнотекстовый поиск, опечатки раскладки, скоринг текстовых совпадений |
-| `tests/core/vacancy.test.ts` | 6 | Нормализация DTO вакансий, слияние сущностей |
-| `tests/core/text.test.ts` | 5 | Очистка HTML, нормализация зарплат и локаций |
-| `tests/core/settings.test.ts` | 3 | Загрузка и сохранение настроек |
+| `tests/core/api.test.ts` | 13 | Каталог 16 категорий, парсер параметров URL, `executeSearch`, `fetchSearchPage` |
+| `tests/core/ai-filter.test.ts` | 9 | Пакетный скоринг, потоковый вызов функций, reasoning fallback, валидация баллов |
+| `tests/core/llm.test.ts` | 8 | SSE-стриминг чанков tool_calls, ReadableStream отмена, тест соединения, получение моделей |
+| `tests/core/models.test.ts` | 7 | Пресеты провайдеров, валидация DTO, кэширование моделей |
+| `tests/core/search.test.ts` | 5 | Полнотекстовый поиск, опечатки раскладки, парсер зарплат (k/M/руб), скоринг |
+| `tests/core/vacancy.test.ts` | 6 | Нормализация DTO вакансий, слияние сущностей, форматирование зарплат |
+| `tests/core/text.test.ts` | 6 | Очистка HTML, безопасный highlight без порчи сущностей, извлечение JSON |
+| `tests/core/settings.test.ts` | 5 | Загрузка и сохранение настроек, ограничение числовых параметров |
 | `tests/core/version.test.ts` | 2 | Версионирование расширения |
 | `tests/background/state.test.ts` | 1 | Инициализация и сброс состояния воркера |
-| `tests/panel/useVacanciesStore.test.ts` | 2 | Реактивный стейт вакансий |
-| `tests/panel/useAiFilterStore.test.ts` | 2 | Реактивный стейт ИИ-фильтрации |
-| **ИТОГО** | **61 тест** | **Все тесты пройдены успешно** |
+| `tests/background/log.test.ts` | 4 | Буфер логов, ротация, отправка в порт боковой панели |
+| `tests/background/tabs.test.ts` | 4 | Отслеживание вкладки hireseeker.ru, авто-фокус и создание |
+| `tests/panel/useVacanciesStore.test.ts` | 3 | Реактивный стейт вакансий, пословная фильтрация |
+| `tests/panel/useAiFilterStore.test.ts` | 3 | Реактивный стейт ИИ-фильтрации, CRUD шаблонов |
+| `tests/panel/extension.test.ts` | 3 | RPC-клиент между Side Panel и Service Worker |
+| **ИТОГО** | **79 тестов** | **Все тесты пройдены успешно** |
 
 ---
 

@@ -121,24 +121,38 @@ export function tokenize(query: string): string[][] {
 
 export function highlight(text: string, tokens: string[]): string {
   if (!text) return '';
-  const esc = escapeHtml(text);
-  if (!tokens || !tokens.length) return esc;
-  const unique = Array.from(new Set(tokens.filter(t => t && String(t).length))).sort(
-    (a, b) => String(b).length - String(a).length
-  );
-  if (!unique.length) return esc;
-  const pattern = unique.map(t => `(?:${escapeRegex(t)})`).join('|');
-  return esc.replace(new RegExp(pattern, 'gi'), '<mark class="hs-mark">$&</mark>');
+  if (!tokens || !tokens.length) return escapeHtml(text);
+  const unique = Array.from(
+    new Set(tokens.map(t => String(t).trim()).filter(t => t.length > 0))
+  ).sort((a, b) => b.length - a.length);
+  if (!unique.length) return escapeHtml(text);
+
+  const pattern = unique.map(t => escapeRegex(t)).join('|');
+  const regex = new RegExp(`(${pattern})`, 'gi');
+
+  const parts = text.split(regex);
+  return parts
+    .map(part => {
+      if (!part) return '';
+      if (unique.some(u => u.toLowerCase() === part.toLowerCase())) {
+        return `<mark class="hs-mark">${escapeHtml(part)}</mark>`;
+      }
+      return escapeHtml(part);
+    })
+    .join('');
 }
 
 export function extractSnippet(text: string, tokens: string[], maxLen = 160): string {
   if (!text) return '';
   const normalized = stripHtml(text);
-  if (!tokens || !tokens.length) {
+  const validTokens = (tokens || [])
+    .map(t => String(t).trim().toLowerCase())
+    .filter(t => t.length > 0);
+  if (!validTokens.length) {
     return escapeHtml(normalized.slice(0, maxLen)) + (normalized.length > maxLen ? '…' : '');
   }
   const lower = normalized.toLowerCase();
-  const hit = tokens.find(t => lower.includes(t));
+  const hit = validTokens.find(t => lower.includes(t));
   if (!hit) {
     return escapeHtml(normalized.slice(0, maxLen)) + (normalized.length > maxLen ? '…' : '');
   }
@@ -147,7 +161,7 @@ export function extractSnippet(text: string, tokens: string[], maxLen = 160): st
   const end = Math.min(normalized.length, start + maxLen);
   const slice =
     (start > 0 ? '…' : '') + normalized.slice(start, end) + (end < normalized.length ? '…' : '');
-  return highlight(slice, tokens);
+  return highlight(slice, validTokens);
 }
 
 export function extractJsonFromText(text: string): any {

@@ -21,6 +21,7 @@ describe('core/vacancy', () => {
     expect(formatSalary({ from: 300000 })).toBe('от 300k ₽');
     expect(formatSalary({ to: 200000 })).toBe('до 200k ₽');
     expect(formatSalary({ from: 1200000 })).toBe('от 1.2M ₽');
+    expect(formatSalary({ from: 800 })).toBe('от 800 ₽');
     expect(formatSalary('150 000 руб.')).toBe('150 000 руб.');
     expect(formatSalary('Зарплата не указана')).toBe('');
   });

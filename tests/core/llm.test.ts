@@ -75,6 +75,40 @@ data: [DONE]
     expect(result.arguments.results[0].score).toBe(95);
   });
 
+  it('streams tool call using ReadableStream and cancels reader on [DONE]', async () => {
+    const sseText =
+      'data: {"choices":[{"delta":{"tool_calls":[{"index":0,"function":{"name":"submit_vacancy_evaluations","arguments":"{\\"results\\": [{\\"id\\": \\"202\\", \\"match\\": false, \\"score\\": 30, \\"reason\\": \\"PHP стек\\"}]}"}}]}}]}\n\ndata: [DONE]\n\n';
+
+    const encoder = new TextEncoder();
+    let streamCancelled = false;
+    const stream = new ReadableStream({
+      start(controller) {
+        controller.enqueue(encoder.encode(sseText));
+      },
+      cancel() {
+        streamCancelled = true;
+      }
+    });
+
+    globalThis.fetch = async () =>
+      ({
+        ok: true,
+        headers: new Headers({ 'content-type': 'text/event-stream' }),
+        body: stream
+      }) as any;
+
+    const result = await sendAiStreamingToolCall(
+      'https://api.test/v1/chat/completions',
+      { model: 'gpt-4o' },
+      'secret-key'
+    );
+
+    expect(result.arguments.results.length).toBe(1);
+    expect(result.arguments.results[0].id).toBe('202');
+    expect(result.arguments.results[0].match).toBe(false);
+    expect(streamCancelled).toBe(true);
+  });
+
   it('sends AI request and returns parsed response', async () => {
     globalThis.fetch = async () =>
       ({

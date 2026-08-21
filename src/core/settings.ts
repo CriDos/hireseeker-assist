@@ -62,10 +62,23 @@ export function settingsDefaults(raw: any = {}): AppSettings {
     model: String(llmRaw.model || DEFAULT_LLM_CONFIG.model),
     provider: String(llmRaw.provider || DEFAULT_LLM_CONFIG.provider),
     reasoningEffort: llmRaw.reasoningEffort || DEFAULT_LLM_CONFIG.reasoningEffort,
-    batchSize: Math.max(5, Math.min(Number(llmRaw.batchSize) || DEFAULT_LLM_CONFIG.batchSize, 50)),
+    batchSize: Math.max(
+      5,
+      Math.min(
+        llmRaw.batchSize != null && !isNaN(Number(llmRaw.batchSize))
+          ? Number(llmRaw.batchSize)
+          : DEFAULT_LLM_CONFIG.batchSize,
+        50
+      )
+    ),
     concurrency: Math.max(
       1,
-      Math.min(Number(llmRaw.concurrency) || DEFAULT_LLM_CONFIG.concurrency, 5)
+      Math.min(
+        llmRaw.concurrency != null && !isNaN(Number(llmRaw.concurrency))
+          ? Number(llmRaw.concurrency)
+          : DEFAULT_LLM_CONFIG.concurrency,
+        5
+      )
     ),
     systemPrompt: llmRaw.systemPrompt || DEFAULT_LLM_CONFIG.systemPrompt
   };

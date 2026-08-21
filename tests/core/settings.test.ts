@@ -27,4 +27,32 @@ describe('core/settings', () => {
     const s2 = settingsDefaults({ llm: { batchSize: 100 } });
     expect(s2.llm.batchSize).toBe(50);
   });
+
+  it('clamps concurrency between 1 and 5', () => {
+    const s1 = settingsDefaults({ llm: { concurrency: 0 } });
+    expect(s1.llm.concurrency).toBe(1);
+
+    const s2 = settingsDefaults({ llm: { concurrency: 10 } });
+    expect(s2.llm.concurrency).toBe(5);
+  });
+
+  it('loads and saves settings via storage', async () => {
+    const { loadSettings, saveSettings } = await import('../../src/core/settings');
+    const store: Record<string, any> = {};
+    (globalThis as any).chrome = {
+      storage: {
+        local: {
+          get: async (key: string) => ({ [key]: store[key] }),
+          set: async (obj: any) => Object.assign(store, obj)
+        }
+      }
+    };
+
+    const initial = await loadSettings();
+    expect(initial.llm.model).toBe('gpt-4o-mini');
+
+    await saveSettings({ llm: { ...initial.llm, model: 'deepseek-chat' } });
+    const updated = await loadSettings();
+    expect(updated.llm.model).toBe('deepseek-chat');
+  });
 });

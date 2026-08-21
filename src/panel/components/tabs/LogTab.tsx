@@ -15,14 +15,26 @@ export const LogTab: React.FC = () => {
     }
   }, [filtered.length]);
 
-  const handleCopy = () => {
+  const handleCopy = async () => {
     if (!filtered.length) return;
     const text = filtered.map(e => `[${e.ts}] [${e.level.toUpperCase()}] ${e.message}`).join('\n');
-    if (navigator.clipboard?.writeText) {
-      navigator.clipboard.writeText(text);
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+      }
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
-    }
+    } catch {}
   };
 
   const filterLabels: Record<LogFilter, string> = {

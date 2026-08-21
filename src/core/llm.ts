@@ -96,8 +96,9 @@ export async function sendAiStreamingToolCall(
     const decoder = new TextDecoder('utf-8');
     let buffer = '';
 
+    let isDone = false;
     try {
-      while (true) {
+      while (!isDone) {
         const { done, value } = await reader.read();
         if (done) break;
 
@@ -109,7 +110,13 @@ export async function sendAiStreamingToolCall(
           const trimmed = line.trim();
           if (!trimmed.startsWith('data:')) continue;
           const data = trimmed.slice(5).trim();
-          if (data === '[DONE]') break;
+          if (data === '[DONE]') {
+            isDone = true;
+            try {
+              await reader.cancel();
+            } catch {}
+            break;
+          }
 
           try {
             const chunk = JSON.parse(data);
@@ -126,7 +133,10 @@ export async function sendAiStreamingToolCall(
                   functionName = tc.function.name;
                 }
                 if (tc.function?.arguments) {
-                  fullArguments += tc.function.arguments;
+                  fullArguments +=
+                    typeof tc.function.arguments === 'string'
+                      ? tc.function.arguments
+                      : JSON.stringify(tc.function.arguments);
                 }
               }
             }
@@ -134,7 +144,7 @@ export async function sendAiStreamingToolCall(
         }
       }
 
-      if (buffer.trim().startsWith('data:')) {
+      if (!isDone && buffer.trim().startsWith('data:')) {
         const data = buffer.trim().slice(5).trim();
         if (data !== '[DONE]') {
           try {
@@ -150,7 +160,10 @@ export async function sendAiStreamingToolCall(
                   functionName = tc.function.name;
                 }
                 if (tc.function?.arguments) {
-                  fullArguments += tc.function.arguments;
+                  fullArguments +=
+                    typeof tc.function.arguments === 'string'
+                      ? tc.function.arguments
+                      : JSON.stringify(tc.function.arguments);
                 }
               }
             }

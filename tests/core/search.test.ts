@@ -73,9 +73,55 @@ describe('core/search', () => {
     expect(hybrid[0].schedule).toBe('Гибрид');
   });
 
-  it('filters by salary threshold', () => {
+  it('filters by salary threshold accurately with various formats', () => {
     const highSalary = searchVacancies(sampleVacancies, '', '250k');
     expect(highSalary.length).toBe(2); // items with 300k and 350k
+
+    const extraVacancies: VacancyItem[] = [
+      {
+        id: '4',
+        title: 'Tech Lead',
+        company: 'MegaCorp',
+        salary: 'от 1.2M ₽',
+        area: 'Москва',
+        schedule: 'Удалёнка',
+        experience: '6+ лет',
+        employment: 'Полная',
+        skills: ['Architecture'],
+        source: 'hh.ru',
+        description: '',
+        text: 'Tech Lead',
+        href: ''
+      },
+      {
+        id: '5',
+        title: 'Junior Support',
+        company: 'MiniCorp',
+        salary: 'от 80000 ₽',
+        area: 'Москва',
+        schedule: 'Офис',
+        experience: 'без опыта',
+        employment: 'Полная',
+        skills: [],
+        source: 'hh.ru',
+        description: '',
+        text: 'Junior Support',
+        href: ''
+      }
+    ];
+
+    // 1.2M must pass both 150k and 250k
+    const lead150 = searchVacancies(extraVacancies, '', '150k');
+    expect(lead150.length).toBe(1);
+    expect(lead150[0].id).toBe('4');
+
+    const lead250 = searchVacancies(extraVacancies, '', '250k');
+    expect(lead250.length).toBe(1);
+    expect(lead250[0].id).toBe('4');
+
+    // 80 000 must NOT pass 150k or 250k
+    const junior150 = searchVacancies([extraVacancies[1]], '', '150k');
+    expect(junior150.length).toBe(0);
   });
 
   it('combines text search and filters', () => {

@@ -20,6 +20,7 @@ export interface AiBatchProgress {
   totalBatches?: number;
   currentBatch?: number;
   currentMatched?: any[];
+  currentEvaluated?: any[];
   failed?: Array<{ index: number; error: any }>;
   message?: string;
 }

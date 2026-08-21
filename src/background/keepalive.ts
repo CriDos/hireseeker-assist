@@ -10,7 +10,7 @@ export function ensureKeepAlive(): void {
   try {
     if (typeof chrome !== 'undefined' && chrome.alarms) {
       if (isWorkActive()) {
-        chrome.alarms.create(KEEP_ALIVE_ALARM, { periodInMinutes: 0.5 });
+        chrome.alarms.create(KEEP_ALIVE_ALARM, { periodInMinutes: 1 });
       } else {
         chrome.alarms.clear(KEEP_ALIVE_ALARM);
       }
@@ -19,7 +19,16 @@ export function ensureKeepAlive(): void {
 }
 
 if (typeof chrome !== 'undefined' && chrome.alarms?.onAlarm) {
-  chrome.alarms.onAlarm.addListener(alarm => {
-    if (alarm.name === KEEP_ALIVE_ALARM) ensureKeepAlive();
+  chrome.alarms.onAlarm.addListener(async alarm => {
+    if (alarm.name === KEEP_ALIVE_ALARM) {
+      if (isWorkActive()) {
+        try {
+          if (chrome.storage?.local) {
+            await chrome.storage.local.get('_keepalive_ping');
+          }
+        } catch {}
+      }
+      ensureKeepAlive();
+    }
   });
 }

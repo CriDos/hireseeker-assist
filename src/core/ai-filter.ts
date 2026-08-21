@@ -26,7 +26,8 @@ export function formatBatchForAi(batch: VacancyItem[]): string {
       if (skillsStr && skillsStr.trim()) lines.push(`Стек: ${skillsStr.trim()}`);
       const desc = stripHtml(v.description);
       if (desc) {
-        lines.push(`Описание: ${desc}`);
+        const cleanDesc = desc.length > 700 ? desc.slice(0, 700).trim() + '…' : desc;
+        lines.push(`Описание: ${cleanDesc}`);
       }
       return lines.join('\n');
     })
@@ -108,9 +109,13 @@ export async function evaluateBatch(
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
-        ],
-        temperature: 0.1
+        ]
       };
+      if (config.reasoningEffort && config.reasoningEffort !== 'none') {
+        fallbackPayload.reasoning_effort = config.reasoningEffort;
+      } else {
+        fallbackPayload.temperature = 0.1;
+      }
       result = await sendAiStreamingToolCall(url, fallbackPayload, config.apiKey, signal);
     } else {
       throw err;
@@ -218,17 +223,22 @@ export async function filterVacanciesWithAi(
 
       processedCount += batch.length;
       const currentMatched: VacancyItem[] = [];
+      const currentEvaluated: VacancyItem[] = [];
 
       vacancies.forEach(v => {
         const aiRes = resultMap.get(String(v.id));
-        if (aiRes && aiRes.match && aiRes.score >= 50) {
-          currentMatched.push({
+        if (aiRes) {
+          const item: VacancyItem = {
             ...v,
             aiScore: aiRes.score,
-            aiMatch: true,
+            aiMatch: aiRes.match,
             aiReason: aiRes.reason,
             aiEvaluatedAt: Date.now()
-          });
+          };
+          currentEvaluated.push(item);
+          if (aiRes.match && aiRes.score >= 50) {
+            currentMatched.push(item);
+          }
         }
       });
 
@@ -242,7 +252,8 @@ export async function filterVacanciesWithAi(
           matches: matchCount,
           totalBatches: batches.length,
           currentBatch: curIndex + 1,
-          currentMatched
+          currentMatched,
+          currentEvaluated
         });
       }
     }

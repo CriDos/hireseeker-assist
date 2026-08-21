@@ -13,7 +13,7 @@
   <img src="https://img.shields.io/badge/React-19.x-61dafb?logo=react&logoColor=black" alt="React 19" />
   <img src="https://img.shields.io/badge/TypeScript-5.x-3178c6?logo=typescript&logoColor=white" alt="TypeScript" />
   <img src="https://img.shields.io/badge/Vite-6.x-646cff?logo=vite&logoColor=white" alt="Vite" />
-  <img src="https://img.shields.io/badge/Vitest-64_passed-brightgreen?logo=vitest&logoColor=white" alt="Vitest" />
+  <img src="https://img.shields.io/badge/Vitest-79_passed-brightgreen?logo=vitest&logoColor=white" alt="Vitest" />
 </p>
 
 ---

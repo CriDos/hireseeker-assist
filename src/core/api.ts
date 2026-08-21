@@ -412,7 +412,11 @@ export function formatFiltersSummary(queryParams?: string): string {
     const params = new URLSearchParams(queryParams.replace(/^\?/, ''));
     const parts: string[] = [];
 
-    const sched = params.getAll('schedule_filter');
+    const sched = params
+      .getAll('schedule_filter')
+      .flatMap(s => s.split(','))
+      .map(s => s.trim())
+      .filter(Boolean);
     if (sched.length) {
       const schedMap: Record<string, string> = {
         remote: 'удалёнка',
@@ -424,7 +428,11 @@ export function formatFiltersSummary(queryParams?: string): string {
       parts.push(translated.join(', '));
     }
 
-    const sb = params.getAll('salary_buckets');
+    const sb = params
+      .getAll('salary_buckets')
+      .flatMap(s => s.split(','))
+      .map(s => s.trim())
+      .filter(Boolean);
     if (sb.length) {
       const sbMap: Record<string, string> = {
         '0_50': 'до 50k',
@@ -451,7 +459,11 @@ export function formatFiltersSummary(queryParams?: string): string {
       parts.push('с з/п');
     }
 
-    const cty = params.getAll('country_filter');
+    const cty = params
+      .getAll('country_filter')
+      .flatMap(s => s.split(','))
+      .map(s => s.trim())
+      .filter(Boolean);
     if (cty.length) {
       const ctyMap: Record<string, string> = {
         rf: 'РФ',

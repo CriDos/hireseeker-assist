@@ -184,10 +184,9 @@ export function installRpc() {
           };
         } catch (err: any) {
           pushLog('warn', `Ошибка поиска: ${err?.message || err}`);
-          return {
-            success: true,
-            data: Array.from(state.vacancies.values())
-          };
+          throw new Error(
+            err?.message || 'Не удалось синхронизировать поиск с сайтом hireseeker.ru'
+          );
         }
       }
 

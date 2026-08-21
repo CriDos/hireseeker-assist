@@ -11,6 +11,49 @@ function normalizeYo(str: string): string {
   return str.replace(/ё/g, 'е').replace(/Ё/g, 'Е');
 }
 
+export function extractMaxSalary(salary: string): number | null {
+  if (!salary || /не указана/i.test(salary)) return null;
+  const clean = salary.replace(/\s+/g, ' ').trim();
+  const values: number[] = [];
+
+  // Match Millions (e.g., "1.2M", "1.5 млн")
+  const mMatches = clean.matchAll(/(\d+(?:[.,]\d+)?)\s*(?:M|М|млн|mln)/gi);
+  for (const m of mMatches) {
+    const num = parseFloat(m[1].replace(',', '.'));
+    if (!isNaN(num)) values.push(Math.round(num * 1e6));
+  }
+
+  // Match Thousands (e.g., "250k", "200 к", "150 тыс")
+  const kMatches = clean.matchAll(/(\d+(?:[.,]\d+)?)\s*(?:k|к|тыс)/gi);
+  for (const m of kMatches) {
+    const num = parseFloat(m[1].replace(',', '.'));
+    if (!isNaN(num)) values.push(Math.round(num * 1e3));
+  }
+
+  // Match full ruble numbers (e.g., "150 000", "200000")
+  const fullMatches = clean.matchAll(/(?:^|[^\d.,])(\d{1,3}(?:\s\d{3})+|\d{5,})(?:$|[^\d.,])/g);
+  for (const m of fullMatches) {
+    const raw = m[1].replace(/\s+/g, '');
+    const num = parseInt(raw, 10);
+    if (!isNaN(num)) values.push(num);
+  }
+
+  // Fallback for simple integer numbers
+  if (values.length === 0) {
+    const digits = clean.match(/\d+/g);
+    if (digits) {
+      digits.forEach(d => {
+        const n = parseInt(d, 10);
+        if (n >= 1000) values.push(n);
+        else if (n >= 10) values.push(n * 1000);
+      });
+    }
+  }
+
+  if (!values.length) return null;
+  return Math.max(...values);
+}
+
 export function searchVacancies(
   vacancies: VacancyItem[],
   query: string,
@@ -43,17 +86,13 @@ export function searchVacancies(
       result = result.filter(v => Boolean(v.salary && !/не указана/i.test(v.salary)));
     } else if (filterSalary === '150k') {
       result = result.filter(v => {
-        const numbers = (v.salary || '').match(/\d+/g);
-        if (!numbers) return false;
-        const maxVal = Math.max(...numbers.map(Number));
-        return maxVal >= 150;
+        const maxVal = extractMaxSalary(v.salary || '');
+        return maxVal !== null && maxVal >= 150000;
       });
     } else if (filterSalary === '250k') {
       result = result.filter(v => {
-        const numbers = (v.salary || '').match(/\d+/g);
-        if (!numbers) return false;
-        const maxVal = Math.max(...numbers.map(Number));
-        return maxVal >= 250;
+        const maxVal = extractMaxSalary(v.salary || '');
+        return maxVal !== null && maxVal >= 250000;
       });
     }
   }

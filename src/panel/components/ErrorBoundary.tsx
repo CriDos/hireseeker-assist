@@ -45,7 +45,7 @@ export class ErrorBoundary extends Component<Props, State> {
     }
   };
 
-  private handleCopy = () => {
+  private handleCopy = async () => {
     const timeStr = new Date().toLocaleString('ru-RU');
     const ua = typeof navigator !== 'undefined' ? navigator.userAgent : 'Unknown';
     const text = [
@@ -58,9 +58,23 @@ export class ErrorBoundary extends Component<Props, State> {
       `\n--- [COMPONENT STACK] ---\n${this.state.errorInfo?.componentStack || 'No component stack'}`
     ].join('\n');
 
-    navigator.clipboard?.writeText(text);
-    this.setState({ copied: true });
-    setTimeout(() => this.setState({ copied: false }), 2000);
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+      }
+      this.setState({ copied: true });
+      setTimeout(() => this.setState({ copied: false }), 2000);
+    } catch {}
   };
 
   public render() {

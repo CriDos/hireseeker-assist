@@ -74,13 +74,14 @@ export async function startAiFilterRun(criteria: string): Promise<void> {
           state.activeAiRun.progress = progress;
         }
 
-        // Apply any newly evaluated matching vacancies to state live in real-time
-        if (progress.currentMatched && progress.currentMatched.length) {
-          progress.currentMatched.forEach(v => {
+        // Apply all newly evaluated vacancies (both matching and non-matching) to state live in real-time
+        const evaluationsToApply = progress.currentEvaluated || progress.currentMatched;
+        if (evaluationsToApply && evaluationsToApply.length) {
+          evaluationsToApply.forEach(v => {
             const existing = state.vacancies.get(v.id);
             if (existing) {
               existing.aiScore = v.aiScore;
-              existing.aiMatch = true;
+              existing.aiMatch = Boolean(v.aiMatch);
               existing.aiReason = v.aiReason;
               existing.aiEvaluatedAt = v.aiEvaluatedAt || Date.now();
             }

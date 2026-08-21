@@ -188,6 +188,11 @@ describe('core/api', () => {
         'schedule_filter=remote&schedule_filter=hybrid&salary_buckets=150_200&include_without_salary=false&country_filter=rf&period_days=14'
       )
     ).toBe('удалёнка, гибрид · 150–200k · с з/п · РФ · 14 дн.');
+    expect(
+      formatFiltersSummary(
+        'schedule_filter=remote,office&salary_buckets=100_150,150_200&country_filter=rf,world'
+      )
+    ).toBe('удалёнка, офис · 100–150k, 150–200k · РФ, весь мир');
     expect(formatFiltersSummary('')).toBe('');
     expect(formatFiltersSummary(undefined)).toBe('');
   });

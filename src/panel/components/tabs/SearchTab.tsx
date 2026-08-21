@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { useVacanciesStore } from '../../store/useVacanciesStore';
 import { useSessionStore } from '../../store/useSessionStore';
 import { searchVacancies } from '../../../core/search';
-import { extractSnippet } from '../../../core/text';
+import { extractSnippet, tokenize } from '../../../core/text';
 import {
   IconSearch,
   IconClose,
@@ -193,7 +193,11 @@ export const SearchTab: React.FC = () => {
                 <p
                   className="hs-card-snippet"
                   dangerouslySetInnerHTML={{
-                    __html: extractSnippet(item.description, searchQuery ? [searchQuery] : [], 180)
+                    __html: extractSnippet(
+                      item.description,
+                      searchQuery ? tokenize(searchQuery).flat() : [],
+                      180
+                    )
                   }}
                 />
               )}

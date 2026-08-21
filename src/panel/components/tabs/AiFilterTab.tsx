@@ -101,7 +101,7 @@ export const AiFilterTab: React.FC = () => {
     setTimeout(() => setSavedNotification(false), 1500);
   };
 
-  const handleExport = () => {
+  const handleExport = async () => {
     if (!matched.length) return;
     const lines = matched.map(
       v =>
@@ -109,11 +109,23 @@ export const AiFilterTab: React.FC = () => {
     );
     const text = `# Результаты ИИ-фильтрации HireSeeker (${matched.length} шт.)\n\n${lines.join('\n\n')}`;
 
-    if (navigator.clipboard?.writeText) {
-      navigator.clipboard.writeText(text);
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+      }
       setCopiedNotification(true);
       setTimeout(() => setCopiedNotification(false), 2000);
-    }
+    } catch {}
   };
 
   return (
@@ -304,6 +316,15 @@ export const AiFilterTab: React.FC = () => {
               placeholder="Название (например: Python Senior Удаленка)"
               value={modalInput}
               onChange={e => setModalInput(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter' && modalInput.trim()) {
+                  e.preventDefault();
+                  void handleModalSubmit();
+                } else if (e.key === 'Escape') {
+                  e.preventDefault();
+                  setModalMode(null);
+                }
+              }}
               autoFocus
             />
             <div className="hs-modal-actions mt-3">

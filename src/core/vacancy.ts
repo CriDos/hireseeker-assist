@@ -18,7 +18,8 @@ export function formatSalary(salary: any): string {
   const fmt = (num: number) => {
     if (num == null || isNaN(num)) return '';
     if (num >= 1e6) return (num / 1e6).toFixed(1).replace(/\.0$/, '') + 'M';
-    return Math.round(num / 1e3) + 'k';
+    if (num >= 1e3) return Math.round(num / 1e3) + 'k';
+    return String(num);
   };
   if (from != null && to != null) return `${fmt(from)}–${fmt(to)} ₽`;
   if (from != null) return `от ${fmt(from)} ₽`;

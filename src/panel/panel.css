@@ -313,6 +313,7 @@ body {
     opacity: 0;
     transform: translateY(2px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -1363,30 +1364,39 @@ mark.hs-mark {
 .mt-1 {
   margin-top: 3px;
 }
+
 .mt-2 {
   margin-top: 5px;
 }
+
 .mt-3 {
   margin-top: 7px;
 }
+
 .mt-4 {
   margin-top: 10px;
 }
+
 .text-emerald {
   color: #34d399;
 }
+
 .text-danger {
   color: #f87171;
 }
+
 .text-amber {
   color: #fbbf24;
 }
+
 .text-muted {
   color: var(--text-muted);
 }
+
 .text-sm {
   font-size: 10.5px;
 }
+
 .text-xs {
   font-size: 9.5px;
 }
@@ -1402,6 +1412,7 @@ mark.hs-mark {
   0% {
     transform: rotate(0deg);
   }
+
   100% {
     transform: rotate(360deg);
   }

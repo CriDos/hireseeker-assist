@@ -41,12 +41,19 @@ export const useAiFilterStore = create<AiFilterState>((set, get) => ({
   selectPreset: id => {
     if (!id) {
       set({ selectedPresetId: null });
+      void useSettingsStore.getState().saveSettings({
+        activeCriteriaId: null
+      });
       return;
     }
     const { presets } = get();
     const found = presets.find(p => p.id === id);
     if (found) {
       set({ selectedPresetId: id, criteriaText: found.text });
+      void useSettingsStore.getState().saveSettings({
+        activeCriteriaId: id,
+        activeCriteriaText: found.text
+      });
     }
   },
 
@@ -107,17 +114,19 @@ export const useAiFilterStore = create<AiFilterState>((set, get) => ({
   deletePreset: async id => {
     const { presets, selectedPresetId } = get();
     const nextPresets = presets.filter(p => p.id !== id);
-    const nextSelected = selectedPresetId === id ? null : selectedPresetId;
+    const nextSelected = selectedPresetId === id ? nextPresets[0]?.id || null : selectedPresetId;
+    const nextText = selectedPresetId === id ? nextPresets[0]?.text || '' : get().criteriaText;
 
     set({
       presets: nextPresets,
-      selectedPresetId: nextSelected
+      selectedPresetId: nextSelected,
+      criteriaText: nextText
     });
 
     await useSettingsStore.getState().saveSettings({
       criteriaPresets: nextPresets,
       activeCriteriaId: nextSelected,
-      activeCriteriaText: get().criteriaText
+      activeCriteriaText: nextText
     });
   },
 

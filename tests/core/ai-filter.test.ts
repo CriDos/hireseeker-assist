@@ -179,6 +179,34 @@ describe('core/ai-filter', () => {
     expect(evaluated[0].score).toBe(91);
   });
 
+  it('fallback payload preserves reasoningEffort and omits temperature', async () => {
+    let secondRequestBody: any = null;
+    const sseResponse =
+      'data: {"choices":[{"delta":{"content":"```json\\n{\\"results\\": [{\\"id\\": \\"101\\", \\"match\\": true, \\"score\\": 88, \\"reason\\": \\"Reasoning match\\"}]}\\n```"}}]}\n\ndata: [DONE]\n\n';
+
+    globalThis.fetch = async (_url: any, options: any) => {
+      const body = JSON.parse(options?.body || '{}');
+      if (body.tools) {
+        return { ok: false, status: 400, text: async () => '{"error": "bad request"}' } as any;
+      }
+      secondRequestBody = body;
+      return {
+        ok: true,
+        headers: new Headers({ 'content-type': 'text/event-stream' }),
+        text: async () => sseResponse
+      } as any;
+    };
+
+    const reasoningConfig: LLMConfig = {
+      ...testConfig,
+      reasoningEffort: 'medium'
+    };
+
+    await evaluateBatch('Ищу Python разработчика', batch, reasoningConfig);
+    expect(secondRequestBody.reasoning_effort).toBe('medium');
+    expect(secondRequestBody.temperature).toBeUndefined();
+  });
+
   it('validates missing apiKey or criteria', async () => {
     const invalidConfig = { ...testConfig, apiKey: '' };
     await expect(filterVacanciesWithAi('Python', batch, invalidConfig)).rejects.toThrow(/API Key/);

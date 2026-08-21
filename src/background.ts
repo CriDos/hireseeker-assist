@@ -24,7 +24,7 @@ initTabsTracker();
 // 5. Panel live port connection (when side panel opens, ensure site tab is active)
 if (typeof chrome !== 'undefined' && chrome.runtime?.onConnect) {
   chrome.runtime.onConnect.addListener(port => {
-    if (port.name === 'hs-panel' || port.name === 'hh-panel') {
+    if (port.name === 'hs-panel') {
       registerPanelPort(port);
       void ensureHireSeekerTabOpen();
     }

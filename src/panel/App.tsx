@@ -95,13 +95,7 @@ export const App: React.FC = () => {
 
     connect();
 
-    // 3. Periodic polling for status
-    const statusInterval = setInterval(() => {
-      useSessionStore.getState().checkStatus();
-    }, 3000);
-
     return () => {
-      clearInterval(statusInterval);
       if (reconnectTimer) clearTimeout(reconnectTimer);
       if (port) {
         try {

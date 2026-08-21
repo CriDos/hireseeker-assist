@@ -79,6 +79,7 @@ export function registerPanelPort(port: chrome.runtime.Port) {
   panelPorts.add(port);
   pushLog('debug', 'Панель подключена');
   port.onDisconnect.addListener(() => {
+    panelPorts.delete(port);
     pushLog('debug', 'Панель отключена');
   });
 }

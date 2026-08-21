@@ -130,48 +130,55 @@ function injectAiBadge(card: HTMLElement, score: number, reason: string, match: 
     }
   }
 
-  const colorClass =
+  const styleConfig =
     match && score >= 85
-      ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
+      ? { bg: 'rgba(16, 185, 129, 0.15)', color: '#10b981', border: 'rgba(16, 185, 129, 0.35)' }
       : match && score >= 60
-        ? 'bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 border-cyan-500/30'
+        ? { bg: 'rgba(6, 182, 212, 0.15)', color: '#06b6d4', border: 'rgba(6, 182, 212, 0.35)' }
         : match && score >= 50
-          ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30'
-          : 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30';
+          ? { bg: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b', border: 'rgba(245, 158, 11, 0.35)' }
+          : { bg: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', border: 'rgba(239, 68, 68, 0.35)' };
 
   existingBadge.innerHTML = `
-    <div style="display:inline-flex; align-items:center; gap:6px; padding:3px 8px; border-radius:6px; border:1px solid; font-size:11px; font-weight:600; margin-top:6px; cursor:help;"
-         class="${colorClass}"
+    <div style="display:inline-flex; align-items:center; gap:6px; padding:3px 8px; border-radius:6px; border:1px solid ${styleConfig.border}; background:${styleConfig.bg}; color:${styleConfig.color}; font-size:11px; font-weight:600; margin-top:6px; cursor:help;"
          title="${cleanText(reason)}">
       <span>AI: ${score}%</span>
-      <span style="font-weight:400; max-width:260px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; opacity:0.85;">${cleanText(reason)}</span>
+      <span style="font-weight:400; max-width:260px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; opacity:0.9;">${cleanText(reason)}</span>
     </div>
   `;
 }
 
+let isUpdatingBadges = false;
+
 function updateCardBadges(
   evaluations: Record<string, { score: number; reason: string; match: boolean }>
 ) {
-  const links = document.querySelectorAll<HTMLAnchorElement>('a[href*="/vacancy/"]');
-  let count = 0;
-  links.forEach(link => {
-    const href = link.href || '';
-    const idMatch = href.match(/\/vacancy\/([^/?#]+)/);
-    const id = idMatch ? idMatch[1] : '';
-    if (id && evaluations[id]) {
-      const card =
-        link.closest<HTMLElement>(
-          'div.group\\/card, [data-slot="card"], div.flex.flex-col, article'
-        ) || (link.parentElement?.parentElement as HTMLElement);
-      if (card) {
-        const ev = evaluations[id];
-        injectAiBadge(card, ev.score, ev.reason, ev.match);
-        count++;
+  if (isUpdatingBadges) return;
+  isUpdatingBadges = true;
+  try {
+    const links = document.querySelectorAll<HTMLAnchorElement>('a[href*="/vacancy/"]');
+    let count = 0;
+    links.forEach(link => {
+      const href = link.href || '';
+      const idMatch = href.match(/\/vacancy\/([^/?#]+)/);
+      const id = idMatch ? idMatch[1] : '';
+      if (id && evaluations[id]) {
+        const card =
+          link.closest<HTMLElement>(
+            'div.group\\/card, [data-slot="card"], div.flex.flex-col, article'
+          ) || (link.parentElement?.parentElement as HTMLElement);
+        if (card) {
+          const ev = evaluations[id];
+          injectAiBadge(card, ev.score, ev.reason, ev.match);
+          count++;
+        }
       }
+    });
+    if (count > 0) {
+      console.debug(`[HireSeeker] Бейджи на странице: ${count}`);
     }
-  });
-  if (count > 0) {
-    console.debug(`[HireSeeker] Бейджи на странице: ${count}`);
+  } finally {
+    isUpdatingBadges = false;
   }
 }
 
@@ -280,7 +287,7 @@ function init() {
     if (badgeObserver || typeof MutationObserver === 'undefined' || !document.body) return;
     let timer: any = null;
     badgeObserver = new MutationObserver(() => {
-      if (Object.keys(lastEvaluations).length === 0) return;
+      if (isUpdatingBadges || Object.keys(lastEvaluations).length === 0) return;
       clearTimeout(timer);
       timer = setTimeout(() => updateCardBadges(lastEvaluations), 250);
     });
