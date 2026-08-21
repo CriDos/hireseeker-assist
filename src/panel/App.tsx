@@ -19,7 +19,7 @@ export const App: React.FC = () => {
     // 1. Initial data loads
     useSessionStore.getState().checkStatus();
     useSettingsStore.getState().loadSettings();
-    useVacanciesStore.getState().syncFromPage();
+    useVacanciesStore.getState().loadVacancies();
     useLogStore.getState().loadHistory();
 
     // 2. Port connection to Service Worker
@@ -42,6 +42,9 @@ export const App: React.FC = () => {
           if (message?.type === 'vacancies-updated') {
             if (Array.isArray(message.vacancies)) {
               useVacanciesStore.getState().setVacancies(message.vacancies);
+            }
+            if (message.totalFound != null) {
+              useSessionStore.getState().setSession({ totalFound: message.totalFound });
             }
           }
           if (message?.type === 'sync-progress') {
@@ -67,7 +70,8 @@ export const App: React.FC = () => {
             } else if (
               message.progress?.stage === 'done' ||
               message.progress?.stage === 'error' ||
-              message.progress?.stage === 'warning'
+              message.progress?.stage === 'warning' ||
+              message.progress?.stage === 'idle'
             ) {
               useAiFilterStore.getState().setIsRunning(false);
             }

@@ -1,7 +1,11 @@
 import { installRpc } from './background/rpc';
+import { restoreStateFromStorage } from './background/state';
 import { initTabsTracker, ensureHireSeekerTabOpen } from './background/tabs';
 import { registerPanelPort, pushLog } from './background/log';
 import { getAppVersion } from './core/version';
+
+// Restore state from persistent storage on service worker boot
+void restoreStateFromStorage();
 
 // 1. Configure Side Panel behavior
 if (typeof chrome !== 'undefined' && chrome.sidePanel?.setPanelBehavior) {

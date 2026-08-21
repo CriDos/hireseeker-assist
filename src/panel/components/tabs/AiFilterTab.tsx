@@ -40,7 +40,6 @@ export const AiFilterTab: React.FC = () => {
   const serverTotal = Math.max(totalFound || 0, vacancies.length);
   const serverFiltered = Math.max(0, serverTotal - vacancies.length);
   const isSyncing = loading || Boolean(syncProgress?.inProgress);
-  const showFilterFlow = serverFiltered > 0;
 
   // Active preset object
   const activePreset = useMemo(() => {
@@ -137,14 +136,10 @@ export const AiFilterTab: React.FC = () => {
             Найдено <strong>{serverTotal}</strong>
           </span>
 
-          {showFilterFlow && (
-            <>
-              <span className="hs-flow-arrow">→</span>
-              <span className="hs-stat-flow-item">
-                Отфильтровано <strong>{serverFiltered}</strong>
-              </span>
-            </>
-          )}
+          <span className="hs-flow-arrow">→</span>
+          <span className="hs-stat-flow-item">
+            Отфильтровано <strong>{serverFiltered}</strong>
+          </span>
 
           <span className="hs-flow-arrow">→</span>
           <span className="hs-stat-flow-item hs-stat-highlight">
@@ -263,7 +258,7 @@ export const AiFilterTab: React.FC = () => {
                 К оценке: <strong>{vacancies.length}</strong> вак.
               </span>
             ) : (
-              <span className="text-amber">Выберите фильтры на сайте</span>
+              <span className="text-amber">Вакансии не загружены</span>
             )}
           </div>
 
@@ -381,11 +376,22 @@ export const AiFilterTab: React.FC = () => {
             </h3>
             <p>
               {vacancies.length === 0
-                ? 'Выберите профессию и фильтры на сайте hireseeker.ru и нажмите «Обновить» на вкладке «Поиск» для загрузки вакансий.'
+                ? 'Выберите специальность на сайте hireseeker.ru и загрузите вакансии для анализа.'
                 : hasEvaluations
                   ? `Нейросеть оценила вакансии (${vacancies.length} шт.), но ни одна не подошла по заданным критериям.`
                   : `Загружено вакансий: ${vacancies.length}. Задайте критерии и нажмите «Запустить ИИ-фильтр», чтобы отобрать подходящие.`}
             </p>
+            {vacancies.length === 0 && (
+              <button
+                type="button"
+                className={`hs-btn-primary hs-btn-xs mt-2 ${isSyncing ? 'hs-btn-loading' : ''}`}
+                onClick={() => syncFromPage()}
+                disabled={isSyncing || isRunning}
+              >
+                <IconRefresh size={12} className={isSyncing ? 'hs-spin' : ''} />
+                <span>{isSyncing ? 'Загрузка...' : 'Загрузить вакансии'}</span>
+              </button>
+            )}
           </div>
         ) : (
           matched.map(item => (

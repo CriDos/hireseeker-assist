@@ -31,7 +31,6 @@ export const SearchTab: React.FC = () => {
   const localFiltered = Math.max(0, vacancies.length - filtered.length);
   const isSearching = searchQuery.trim().length > 0;
   const isSyncing = loading || Boolean(syncProgress?.inProgress);
-  const showFilterFlow = serverFiltered > 0 || (isSearching && localFiltered > 0);
 
   return (
     <div className="hs-tab-content hs-search-tab">
@@ -42,22 +41,16 @@ export const SearchTab: React.FC = () => {
             Найдено <strong>{serverTotal}</strong>
           </span>
 
-          {showFilterFlow && (
-            <>
-              <span className="hs-flow-arrow">→</span>
-              <span className="hs-stat-flow-item">
-                Отфильтровано{' '}
-                <strong>
-                  {serverFiltered > 0 ? serverFiltered : ''}
-                  {isSearching && localFiltered > 0 ? (
-                    <span className="hs-stat-delta text-amber">
-                      {serverFiltered > 0 ? ` (+${localFiltered})` : `+${localFiltered}`}
-                    </span>
-                  ) : null}
-                </strong>
-              </span>
-            </>
-          )}
+          <span className="hs-flow-arrow">→</span>
+          <span className="hs-stat-flow-item">
+            Отфильтровано{' '}
+            <strong>
+              {serverFiltered}
+              {isSearching && localFiltered > 0 ? (
+                <span className="hs-stat-delta text-amber"> (+{localFiltered})</span>
+              ) : null}
+            </strong>
+          </span>
 
           <span className="hs-flow-arrow">→</span>
           <span className="hs-stat-flow-item hs-stat-highlight">
@@ -116,11 +109,22 @@ export const SearchTab: React.FC = () => {
             <h3>{vacancies.length === 0 ? 'Вакансии не загружены' : 'Ничего не найдено'}</h3>
             <p>
               {vacancies.length === 0
-                ? 'Выберите профессию и фильтры на сайте hireseeker.ru и нажмите кнопку «Обновить» для загрузки списка.'
+                ? 'Выберите специальность на сайте hireseeker.ru и нажмите кнопку загрузки.'
                 : isSearching
                   ? `По запросу «${searchQuery}» совпадений не найдено. Попробуйте изменить ключевые слова.`
                   : 'Нет вакансий, соответствующих текущему фильтру.'}
             </p>
+            {vacancies.length === 0 && (
+              <button
+                type="button"
+                className={`hs-btn-primary hs-btn-xs mt-2 ${isSyncing ? 'hs-btn-loading' : ''}`}
+                onClick={() => syncFromPage()}
+                disabled={isSyncing}
+              >
+                <IconRefresh size={12} className={isSyncing ? 'hs-spin' : ''} />
+                <span>{isSyncing ? 'Загрузка...' : 'Загрузить вакансии'}</span>
+              </button>
+            )}
           </div>
         ) : (
           filtered.map(item => (

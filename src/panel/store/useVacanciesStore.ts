@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { VacancyItem } from '../../types/vacancy';
 import { sendRpc } from '../services/extension';
+import { useSessionStore } from './useSessionStore';
 
 export interface SyncProgress {
   inProgress: boolean;
@@ -74,6 +75,7 @@ export const useVacanciesStore = create<VacanciesState>((set, get) => ({
       set({ loading: true, error: null });
       const data = await sendRpc<VacancyItem[]>('GET_VACANCIES');
       set({ vacancies: data || [], loading: false });
+      void useSessionStore.getState().checkStatus();
     } catch (e: any) {
       set({ error: e.message || 'Ошибка загрузки вакансий', loading: false });
     }
@@ -92,6 +94,7 @@ export const useVacanciesStore = create<VacanciesState>((set, get) => ({
       } else {
         await get().loadVacancies();
       }
+      void useSessionStore.getState().checkStatus();
     } catch (e: any) {
       set({ error: e.message || 'Ошибка синхронизации со страницей', loading: false });
     }

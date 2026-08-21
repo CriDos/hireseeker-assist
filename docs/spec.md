@@ -1,6 +1,6 @@
 # Техническая спецификация HireSeeker Assist
 
-**Версия:** 1.0.2  
+**Версия:** 1.0.3  
 **Платформа:** Google Chrome / Chromium (Manifest V3)  
 **Технологический стек:** TypeScript 5.x, React 19.x, Zustand 5.x, Vite 6.x, Vitest  
 
@@ -24,13 +24,10 @@
 │  │       Side Panel (React 19 + Zustand)        │        │             Target Tab               │  │
 │  │                                              │        │          (hireseeker.ru)             │  │
 │  │  - SearchTab: полнотекстовый фильтр и список │        │                                      │  │
-│  │  - AiFilterTab: скоринг, пресеты, результаты │        │  - Main World Interceptor:           │  │
-│  │  - LogTab: журнал событий реального времени  │        │    перехват POST /api/v1/search      │  │
-│  │  - SettingsTab: комбобокс моделей, ключи     │        │    и GET /api/v1/search/{token}/page │  │
-│  │  - Header: статус активности вкладки         │        │  - Page Storage Sync:                │  │
-│  │                                              │        │    чтение hs_v2_last_search_body     │  │
-│  │                                              │        │  - In-Page AI Badges:                │  │
-│  │                                              │        │    наложение плашек на карточки      │  │
+│  │  - AiFilterTab: скоринг, пресеты, результаты │        │  - Page Storage Sync:                │  │
+│  │  - LogTab: журнал событий реального времени  │        │    чтение hs_v2_last_search_body     │  │
+│  │  - SettingsTab: комбобокс моделей, ключи     │        │  - In-Page AI Badges:                │  │
+│  │  - Header: статус активности вкладки         │        │    наложение плашек на карточки      │  │
 │  └──────────────────────┬───────────────────────┘        └──────────────────▲───────────────────┘  │
 │                         │ RPC (chrome.runtime.Port / onMessage)             │ chrome.tabs          │
 │                         ▼                                                   │ sendMessage          │
@@ -66,13 +63,13 @@
 ## 3. Сквозная интеграция с API `hireseeker.ru`
 
 ### 3.1. Уровни синхронизации данных:
-1. **Live Interceptor (Main World Script):**
-   - Перехватывает нативный `window.fetch` страницы.
-   - Захватывает точный `POST /api/v1/search` body со всеми параметрами, сформированными интерфейсом сайта.
-   - Передаёт захваченное тело и токен через события `CustomEvent('__hs_search_post__')` и `CustomEvent('__hs_search_response__')` в изолированный контент-скрипт.
+1. **Background API Client (`executeSearch` & `fetchAllPagesForSearch`):**
+   - Напрямую взаимодействует с REST API `hireseeker.ru` (`POST /api/v1/search` и `GET /api/v1/search/{token}/page`).
+   - Формирует тело поискового запроса на основе URL активной вкладки и сохранённых параметров страницы.
+   - Выгружает полный пул вакансий в фоновом режиме по кнопке обновления.
 2. **Page Storage Synchronizer:**
    - Считывает `localStorage['hs_v2_last_search_body']` и `localStorage['hs_last_selection']`.
-   - Синхронизирует текущую выборку пользователя без дополнительных сетевых запросов.
+   - Синхронизирует текущую выборку пользователя без вмешательства во внутренний JS-контекст сайта.
 3. **Universal Catalog Resolver (`resolveProfessionCodes`):**
    - Содержит эталонную карту всех 16 групп специальностей `hireseeker.ru`:
      - `backend`: `python_backend`, `jvm_backend`, `go_backend`, `nodejs_backend`, `dotnet_backend`, `php_backend`, `cpp_backend`, `other_backend`

@@ -1,4 +1,4 @@
-import { state } from './state';
+import { state, saveStateToStorage, restoreStateFromStorage } from './state';
 import { pushLog, broadcastToPanels } from './log';
 import { AiBatchProgress, AiEvaluationItem } from '../types/ai';
 import { filterVacanciesWithAi } from '../core/ai-filter';
@@ -13,10 +13,24 @@ export async function startAiFilterRun(criteria: string): Promise<void> {
     throw new Error('ИИ-фильтрация уже выполняется');
   }
 
+  if (state.vacancies.size === 0) {
+    await restoreStateFromStorage();
+  }
+
   const vacancies = Array.from(state.vacancies.values());
   if (!vacancies.length) {
     pushLog('warn', 'Нет вакансий для анализа');
-    throw new Error('Нет доступных вакансий. Откройте поиск на hireseeker.ru');
+    broadcastToPanels({
+      type: 'ai-progress',
+      progress: {
+        stage: 'idle',
+        total: 0,
+        processed: 0,
+        matches: 0,
+        message: 'Нет доступных вакансий'
+      }
+    });
+    throw new Error('Нет доступных вакансий. Загрузите список вакансий');
   }
 
   const settings = await loadSettings();
@@ -119,6 +133,8 @@ export async function startAiFilterRun(criteria: string): Promise<void> {
         evalMap[v.id] = evItem;
       }
     });
+
+    void saveStateToStorage();
 
     const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
     pushLog(
@@ -280,7 +296,8 @@ export async function fetchAllPagesForSearch(): Promise<number> {
         broadcastToPanels({
           type: 'vacancies-updated',
           vacancies: Array.from(state.vacancies.values()),
-          count: state.vacancies.size
+          count: state.vacancies.size,
+          totalFound: state.totalFound
         });
 
         pushLog('debug', `Страница ${page}/${totalPages}: ${state.vacancies.size} вакансий`);
@@ -301,6 +318,7 @@ export async function fetchAllPagesForSearch(): Promise<number> {
     pushLog('warn', `Ошибка загрузки страниц: ${error?.message || error}`);
   } finally {
     state.loadAllInProgress = false;
+    void saveStateToStorage();
     broadcastToPanels({
       type: 'sync-progress',
       inProgress: false,

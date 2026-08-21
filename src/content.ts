@@ -1,114 +1,3 @@
-// 1. Inject Main World script to intercept and trigger official API requests
-function injectMainWorldInterceptor() {
-  const script = document.createElement('script');
-  script.textContent = `
-    (() => {
-      const origFetch = window.fetch;
-      if (window.__hs_fetch_injected) return;
-      window.__hs_fetch_injected = true;
-
-      // Intercept SPA navigation
-      const origPushState = history.pushState;
-      const origReplaceState = history.replaceState;
-      history.pushState = function(...args) {
-        const res = origPushState.apply(this, args);
-        window.dispatchEvent(new CustomEvent('__hs_location_change__', { detail: window.location.href }));
-        return res;
-      };
-      history.replaceState = function(...args) {
-        const res = origReplaceState.apply(this, args);
-        window.dispatchEvent(new CustomEvent('__hs_location_change__', { detail: window.location.href }));
-        return res;
-      };
-      window.addEventListener('popstate', () => {
-        window.dispatchEvent(new CustomEvent('__hs_location_change__', { detail: window.location.href }));
-      });
-      window.addEventListener('hashchange', () => {
-        window.dispatchEvent(new CustomEvent('__hs_location_change__', { detail: window.location.href }));
-      });
-
-      window.fetch = async function(...args) {
-        let urlStr = '';
-        if (typeof args[0] === 'string') urlStr = args[0];
-        else if (args[0] && args[0].url) urlStr = args[0].url;
-
-        let isSearchPost = false;
-        let isPageGet = false;
-        let parsedUrl = null;
-
-        try {
-          parsedUrl = new URL(urlStr, window.location.origin);
-        } catch {}
-
-        const method = (args[1] && args[1].method || 'GET').toUpperCase();
-        if (parsedUrl) {
-          if (/\\/api\\/v1\\/search$/.test(parsedUrl.pathname) && method === 'POST') isSearchPost = true;
-          if (/\\/api\\/v1\\/search\\/[^/]+\\/page/.test(parsedUrl.pathname) && method === 'GET') isPageGet = true;
-        }
-
-        if (isSearchPost && args[1] && args[1].body) {
-          try {
-            const body = typeof args[1].body === 'string' ? JSON.parse(args[1].body) : args[1].body;
-            window.__hs_last_post_body = body;
-            window.dispatchEvent(new CustomEvent('__hs_search_post__', { detail: body }));
-          } catch {}
-        }
-
-        const response = await origFetch.apply(this, args);
-
-        try {
-          if (response.ok && (isSearchPost || isPageGet)) {
-            const clone = response.clone();
-            clone.json().then((json) => {
-              window.__hs_last_search_json = json;
-              window.__hs_last_search_url = urlStr;
-              window.dispatchEvent(new CustomEvent('__hs_search_response__', {
-                detail: {
-                  isSearchPost,
-                  isPageGet,
-                  json,
-                  url: urlStr
-                }
-              }));
-            }).catch(() => {});
-          }
-        } catch {}
-
-        return response;
-      };
-
-      // Handler to trigger API search programmatically using page's current URL or state
-      window.addEventListener('__hs_trigger_search__', async () => {
-        try {
-          let postBody = window.__hs_last_post_body;
-          if (!postBody) {
-            try {
-              const raw = localStorage.getItem('hs_v2_last_search_body');
-              if (raw) postBody = JSON.parse(raw);
-            } catch {}
-          }
-
-          if (postBody && Array.isArray(postBody.profession_codes) && postBody.profession_codes.length > 0) {
-            await window.fetch('/api/v1/search', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json, text/plain, */*'
-              },
-              body: JSON.stringify(postBody)
-            });
-            return;
-          }
-        } catch (err) {
-          console.warn('[HireSeeker] Ошибка повторного поиска:', err);
-        }
-      });
-    })();
-  `;
-  (document.head || document.documentElement).appendChild(script);
-  script.remove();
-}
-
 function cleanText(str: string): string {
   return String(str || '')
     .replace(/<[^>]*>/g, ' ')
@@ -116,7 +5,7 @@ function cleanText(str: string): string {
     .trim();
 }
 
-// 2. Inject AI Badges onto Native Page Cards (Visual Overlay Only)
+// 1. Inject AI Badges onto Native Page Cards (Visual Overlay Only)
 function injectAiBadge(card: HTMLElement, score: number, reason: string, match: boolean) {
   let existingBadge = card.querySelector<HTMLElement>('.hs-ai-score-badge');
   if (!existingBadge) {
@@ -182,9 +71,8 @@ function updateCardBadges(
   }
 }
 
-// 3. Main Initialization
+// 2. Main Initialization
 function init() {
-  injectMainWorldInterceptor();
   console.info('[HireSeeker] Модуль активен:', window.location.pathname);
 
   let lastEvaluations: Record<string, any> = {};
@@ -205,7 +93,7 @@ function init() {
         .sendMessage({
           type: 'PAGE_STORAGE_DETECTED',
           data: {
-            lastSearchBody: lastCapturedPostBody || body,
+            lastSearchBody: body,
             lastSelection: sel,
             url: window.location.href,
             origin: window.location.origin,
@@ -219,67 +107,9 @@ function init() {
   // Report initial page state
   reportCurrentPageState('init');
 
-  // Listen for SPA navigation from main world
-  window.addEventListener('__hs_location_change__', () => {
-    reportCurrentPageState('location_change');
-  });
-
   // Listen for localStorage changes
   window.addEventListener('storage', () => {
     reportCurrentPageState('storage_event');
-  });
-
-  let lastCapturedPostBody: any = null;
-
-  // Listen for intercepted events from Main World fetch
-  window.addEventListener('__hs_search_post__', (ev: any) => {
-    lastCapturedPostBody = ev.detail;
-    console.info('[HireSeeker] Поиск перехвачен:', lastCapturedPostBody);
-    reportCurrentPageState('search_post');
-    chrome.runtime
-      .sendMessage({
-        type: 'SEARCH_POST_INTERCEPTED',
-        data: lastCapturedPostBody
-      })
-      .catch(() => {});
-  });
-
-  window.addEventListener('__hs_search_response__', (ev: any) => {
-    const { isSearchPost, isPageGet, json, url } = ev.detail;
-    const token = json?.token || json?.search?.token;
-    const rawVacancies = json?.vacancies || [];
-
-    let queryParams = '';
-    try {
-      if (url) {
-        const parsed = new URL(url, window.location.origin);
-        queryParams = parsed.search.replace(/^\?/, '');
-      }
-    } catch {}
-
-    console.info(
-      `[HireSeeker] Получено вакансий: ${rawVacancies.length} (всего: ${json?.total_items ?? '?'})`
-    );
-
-    chrome.runtime
-      .sendMessage({
-        type: 'SEARCH_RESPONSE_INTERCEPTED',
-        data: {
-          token,
-          rawVacancies,
-          origin: window.location.origin,
-          total_items: json?.total_items ?? json?.stats?.total_found ?? json?.search?.total_items,
-          stats: json?.stats,
-          queryParams,
-          isSearchPost,
-          isPageGet
-        }
-      })
-      .catch(() => {});
-
-    if (Object.keys(lastEvaluations).length) {
-      setTimeout(() => updateCardBadges(lastEvaluations), 400);
-    }
   });
 
   let badgeObserver: MutationObserver | null = null;
@@ -307,7 +137,7 @@ function init() {
       } catch {}
       sendResponse({
         url: window.location.href,
-        lastSearchBody: lastCapturedPostBody || lastSearchBody || null,
+        lastSearchBody,
         lastSelection,
         origin: window.location.origin
       });
@@ -317,10 +147,6 @@ function init() {
       lastEvaluations = { ...lastEvaluations, ...(message.data || {}) };
       updateCardBadges(lastEvaluations);
       ensureBadgeObserver();
-    }
-    if (message.type === 'REQUEST_PAGE_SYNC') {
-      // Trigger API search
-      window.dispatchEvent(new CustomEvent('__hs_trigger_search__'));
     }
   });
 }

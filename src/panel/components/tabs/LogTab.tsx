@@ -38,10 +38,10 @@ export const LogTab: React.FC = () => {
   };
 
   const filterLabels: Record<LogFilter, string> = {
-    all: 'Все',
-    info: 'Инфо',
-    warn: 'Предупр.',
-    error: 'Ошибки'
+    all: 'All',
+    info: 'Info',
+    warn: 'Warn',
+    error: 'Error'
   };
 
   return (

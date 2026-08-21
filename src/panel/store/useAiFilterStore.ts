@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { CandidateCriteria, AiBatchProgress } from '../../types/ai';
 import { sendRpc } from '../services/extension';
 import { useSettingsStore } from './useSettingsStore';
+import { useVacanciesStore } from './useVacanciesStore';
 
 interface AiFilterState {
   criteriaText: string;
@@ -139,7 +140,11 @@ export const useAiFilterStore = create<AiFilterState>((set, get) => ({
 
     try {
       set({ isRunning: true, error: null });
-      await sendRpc('START_AI_FILTER', { criteria: criteriaText.trim() });
+      const currentVacancies = useVacanciesStore.getState().vacancies;
+      await sendRpc('START_AI_FILTER', {
+        criteria: criteriaText.trim(),
+        vacancies: currentVacancies
+      });
     } catch (e: any) {
       set({ isRunning: false, error: e.message || 'Ошибка запуска ИИ-фильтрации' });
     }

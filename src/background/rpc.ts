@@ -1,10 +1,9 @@
-import { state, clearState } from './state';
+import { state, clearState, restoreStateFromStorage, saveStateToStorage } from './state';
 import { getLogs, clearLogs, pushLog, broadcastToPanels } from './log';
 import { startAiFilterRun, cancelAiFilterRun, fetchAllPagesForSearch } from './coordinator';
 import { checkActiveTabStatus } from './tabs';
 import { loadSettings, saveSettings } from '../core/settings';
 import { testConnection, fetchModels } from '../core/llm';
-import { mergeVacancies, normalizeApiVacancy } from '../core/vacancy';
 import {
   executeSearch,
   buildSearchRequestBody,
@@ -40,54 +39,6 @@ export function installRpc() {
           state.lastSelection
         );
         return { success: true };
-      }
-
-      if (type === 'SEARCH_POST_INTERCEPTED') {
-        state.lastSearchBody = data;
-        return { success: true };
-      }
-
-      if (type === 'SEARCH_RESPONSE_INTERCEPTED') {
-        const isNewSearch =
-          data?.isSearchPost || (data?.token && data.token !== state.lastSearchToken);
-        if (isNewSearch) {
-          state.vacancies.clear();
-        }
-
-        if (data?.token) state.lastSearchToken = data.token;
-        state.lastQueryParams = buildPageQueryParams(
-          state.connectedPageUrl || '',
-          data.queryParams || '',
-          state.lastSelection
-        );
-
-        const totalItems = data?.total_items ?? data?.stats?.total_items;
-        const totalCategory = data?.stats?.total_found ?? totalItems;
-        if (totalCategory != null) state.totalFound = Number(totalCategory);
-
-        const rawList = data?.rawVacancies || data?.vacancies || [];
-        const origin = data?.origin || state.lastOrigin || 'https://hireseeker.ru';
-        let added = 0;
-        rawList.forEach((v: any) => {
-          const item = v?.text ? v : normalizeApiVacancy(v, origin);
-          if (!item.id) return;
-          const existing = state.vacancies.get(item.id);
-          const merged = mergeVacancies(existing, item);
-          if (merged) {
-            state.vacancies.set(item.id, merged);
-            if (!existing) added++;
-          }
-        });
-
-        if (added > 0) {
-          broadcastToPanels({
-            type: 'vacancies-updated',
-            vacancies: Array.from(state.vacancies.values()),
-            count: state.vacancies.size
-          });
-        }
-
-        return { success: true, count: state.vacancies.size };
       }
 
       // Commands from Side Panel
@@ -177,6 +128,7 @@ export function installRpc() {
 
           // Fetch all pages in background with exact query filters (schedule, salary, etc.)
           await fetchAllPagesForSearch();
+          void saveStateToStorage();
 
           return {
             success: true,
@@ -197,7 +149,30 @@ export function installRpc() {
 
       if (type === 'START_AI_FILTER') {
         const criteria = String(data?.criteria || '');
-        void startAiFilterRun(criteria);
+        if (
+          Array.isArray(data?.vacancies) &&
+          data.vacancies.length > 0 &&
+          state.vacancies.size === 0
+        ) {
+          data.vacancies.forEach((v: any) => {
+            if (v && v.id) state.vacancies.set(v.id, v);
+          });
+        }
+        if (state.vacancies.size === 0) {
+          await restoreStateFromStorage();
+        }
+        void startAiFilterRun(criteria).catch(err => {
+          broadcastToPanels({
+            type: 'ai-progress',
+            progress: {
+              stage: 'idle',
+              total: state.vacancies.size,
+              processed: 0,
+              matches: 0,
+              message: err?.message || String(err)
+            }
+          });
+        });
         return { success: true };
       }
 
