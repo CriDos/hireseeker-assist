@@ -49,6 +49,21 @@
       "problemMatcher": [],
       "label": "Run Tests (npm test)",
       "detail": "Запуск всех юнит- и интеграционных тестов"
+    },
+    {
+      "type": "npm",
+      "script": "test:watch",
+      "group": "test",
+      "problemMatcher": [],
+      "label": "Watch Tests (npm run test:watch)",
+      "detail": "Запуск тестов в режиме отслеживания изменений"
+    },
+    {
+      "type": "npm",
+      "script": "format",
+      "problemMatcher": [],
+      "label": "Format Code (npm run format)",
+      "detail": "Форматирование всех файлов проекта с помощью Prettier"
     }
   ]
 }

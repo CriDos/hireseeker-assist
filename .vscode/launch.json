@@ -4,8 +4,8 @@
     {
       "type": "chrome",
       "request": "launch",
-      "name": "🚀 Launch Chrome",
-      "url": "https://hh.ru/applicant/skill_verifications/methods",
+      "name": "🚀 Launch HireSeeker Assist (Chrome)",
+      "url": "https://hireseeker.ru",
       "runtimeArgs": ["--load-extension=${workspaceFolder}\\dist"],
       "webRoot": "${workspaceFolder}",
       "preLaunchTask": "Build Extension (npm run build)",
@@ -14,9 +14,9 @@
     {
       "type": "node",
       "request": "launch",
-      "name": "🧪 Debug All Tests",
+      "name": "🧪 Debug All Tests (Vitest)",
       "runtimeExecutable": "npx",
-      "runtimeArgs": ["vitest", "run", "tests/**/*.test.ts"],
+      "runtimeArgs": ["vitest", "run"],
       "console": "integratedTerminal",
       "internalConsoleOptions": "neverOpen",
       "skipFiles": ["<node_internals>/**"]
@@ -34,7 +34,7 @@
     {
       "type": "chrome",
       "request": "launch",
-      "name": "🌐 Debug Side Panel (Vite Dev)",
+      "name": "🌐 Dev Side Panel (Vite Server)",
       "url": "http://localhost:5173/src/panel/index.html",
       "webRoot": "${workspaceFolder}",
       "preLaunchTask": "Dev Side Panel (npm run dev:panel)",
